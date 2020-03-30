@@ -14,168 +14,186 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 CORS(app)
 
-mydb = mariadb.connect(user='root', database='forum_db')
+mydb = mariadb.connect(user='root', database='challenge_db')
 mycursor = mydb.cursor()
 
+@app.route('/solved_tasks', methods=['GET', 'POST'])
+def get_solved_tasks():
+	userid = request.get_json()['userid']
+	mycursor.execute("SELECT * FROM Solvedtasks WHERE idUser = '%s' " %(str(userid)))
+	rv = mycursor.fetchall()
+	stasks = [x[2] for x in rv]
+	result = {'result': stasks}
 
-@app.route('/comments', methods=['DELETE'])
-def delete_comment():
-    print (request.get_json())
-    cid = request.get_json()['comid']
-    email = request.get_json()['useremail']
-    mycursor.execute("SELECT * FROM Forum_users WHERE email = " + "'" + str(email) + "'" )
-    rv = mycursor.fetchone()
-    uid = rv[0]
-    mycursor.execute("SELECT * FROM Comments WHERE comment_id = " + str(cid))
-    rv2 = mycursor.fetchone()
-    result = {'error': 'Error'}
-    if rv2[1] == uid:
-        sql = "DELETE FROM Comments WHERE comment_id = " + str(cid)
-        mycursor.execute(sql)
-        mydb.commit()
-        result = {
-            'comid': cid
-        }
-    else:
-        result = {'error': 'Error'}
-    
-    return jsonify({'result': result})
+	return result;
 
 
-@app.route('/comments', methods=['PUT'])
-def create_comment():
-    pid = request.get_json()['pid']
-    info = request.get_json()['text']
-    email = request.get_json()['usermail']
-    mycursor.execute("SELECT * FROM Forum_users WHERE email = " + "'" + str(email) + "'" )
-    rv = mycursor.fetchone()
-    uid = rv[0]
+@app.route('/solved_challenges', methods=['GET', 'POST'])
+def get_solved_challenges():
+	userid = request.get_json()['userid']
+	mycursor.execute("SELECT * FROM Solvedchallenges WHERE idUser = '%s' " %(str(userid)))
+	rv = mycursor.fetchall()
+	schallenges = [x[2] for x in rv]
+	result = {'result': schallenges}
 
-    sql = "INSERT INTO Comments (user_id, p_id, " + " text " + ")  \
-    VALUES (" + str(uid) + "," + str(pid) + "," + "'" + str(info) + "'" + ")"
-    
-    mycursor.execute(sql)
-    mydb.commit()
+	return result;
 
-    result = {
-        'uid': uid,
-        'pid': pid,
-        'text': info
-    }
 
-    return jsonify({'result': result})
+@app.route('/stats', methods=['GET', 'POST'])
+def get_stats():
+	print (request.get_json())
+	print (request.args)
+	userid = request.get_json()['userid']
+	mycursor.execute("SELECT * FROM Solvedchallenges WHERE idUser = " + str(userid))
+	rv = mycursor.fetchall()
+	chs = [x[2] for x in rv]
+	print (chs)
+	xp = 0
+	stars = 0
+	level = 1
+	names = []
+	mycursor.execute("SELECT * FROM Challenges")
+	rv = mycursor.fetchall()
+	for x in rv:
+		if x[0] in chs:
+			xp += x[4]
+			stars += x[3]
+			names.append(x[1])
+	if xp < 25:
+		level = 1
+	elif xp < 50:
+		level = 2
+	elif xp < 100:
+		level = 3
+	elif xp < 200:
+		level = 4
+	elif xp < 350:
+		level = 5
+	elif xp < 500:
+		level = 6
+	elif xp < 700:
+		level = 7
+	elif xp < 1000:
+		level = 8
+	else:
+		level = 9
 
-@app.route('/comments', methods=['POST'])
-def get_comments():
-    print ('- - - - - - - - - - - - - -- - - - -  --')
-    print(request.get_json())
-    pid = request.get_json()['pid']
-    mycursor.execute("SELECT * FROM Comments WHERE p_id = " + str(pid))
+	result = {
+			'xp': xp,
+			'stars': stars,
+			'level': level,
+			'names': names
+		}
+
+
+	return jsonify({'result': result})
+
+
+@app.route('/tasks/<chid>', methods=['GET'])
+def get_tasks(chid):
+    print (chid)
+    id = chid
+    mycursor.execute("SELECT * FROM Tasks WHERE challangeid = " + str(id))
     rv = mycursor.fetchall()
     print (rv)
     l = []
     for x in rv:
         l.append({'id': x[0],
-            'cuser': x[1],
-            'pid': x[2],
-            'text': x[3]})
+            'title': x[1],
+            'description': x[2],
+            'answer': x[3],
+            'challengeid': x[4]})
 
-    for i in range(len(l)):
-        user = l[i]['cuser']
-        mycursor.execute("SELECT * FROM Forum_users WHERE id = " + str(user))
-        rv = mycursor.fetchone()
-        l[i]['cuser'] = rv[1]
 
     return jsonify({'result': l})
 
 
-@app.route('/', methods=['DELETE'])
-def delete_post():
-    print (request.get_json())
-    pid = request.get_json()['postid']
-    email = request.get_json()['useremail']
-    mycursor.execute("SELECT * FROM Forum_users WHERE email = " + "'" + str(email) + "'" )
-    rv = mycursor.fetchone()
-    uid = rv[0]
-    mycursor.execute("SELECT * FROM Posts WHERE post_id = " + str(pid))
-    rv2 = mycursor.fetchone()
-    result = {'error': 'Error'}
-    if rv2[1] == uid:
-        sql = "DELETE FROM Posts WHERE post_id = " + str(pid)
-        mycursor.execute(sql)
-        mydb.commit()
-        result = {
-            'postid': pid
-        }
-    else:
-        result = {'error': 'Error'}
-    
-    return jsonify({'result': result})
 
+@app.route('/challenges', methods=['GET'])
+def get_challenges():
 
-@app.route('/', methods=['PUT'])
-def create_post():
-    domid = request.get_json()['domainid']
-    info = request.get_json()['postinfo']
-    email = request.get_json()['useremail']
-    mycursor.execute("SELECT * FROM Forum_users WHERE email = " + "'" + str(email) + "'" )
-    rv = mycursor.fetchone()
-    uid = rv[0]
-
-    sql = "INSERT INTO Posts (puser, pdomain, content) \
-    VALUES (" + str(uid) + "," + str(domid) + "," + "'" + str(info) + "'" + ")"
-    
-    mycursor.execute(sql)
-    mydb.commit()
-
-    result = {
-        'puser': uid,
-        'pdomain': domid,
-        'content': info
-    }
-
-    return jsonify({'result': result})
-
-@app.route('/posts', methods=['GET'])
-def get_posts():
-    mycursor.execute("SELECT * FROM Posts")
+    mycursor.execute("SELECT * FROM Challenges")
     rv = mycursor.fetchall()
     print (rv)
     l = []
     for x in rv:
         l.append({'id': x[0],
-            'puser': x[1],
-            'pdomain': x[2],
-            'content': x[3]})
-
-    for i in range(len(l)):
-        user = l[i]['puser']
-        mycursor.execute("SELECT * FROM Forum_users WHERE id = " + str(user))
-        rv = mycursor.fetchone()
-        l[i]['puser'] = rv[1]
-
-        domain = l[i]['pdomain']
-        mycursor.execute("SELECT * FROM Domains WHERE domain_id = " + str(domain))
-        rv = mycursor.fetchone()
-        l[i]['pdomain'] = rv[1]
+            'title': x[1],
+            'description': x[2],
+            'difficulty': x[3],
+            'xp': x[4]
+            })
 
     return jsonify({'result': l})
 
 
-@app.route('/', methods=['GET'])
-def get_domains():
-    mycursor.execute("SELECT * FROM Domains")
-    rv = mycursor.fetchall()
-    print (rv)
-    l = []
-    for x in rv:
-        l.append({'id': x[0],
-            'name': x[1],
-            'duser': x[2],
-            'ddesc': x[3]})
 
-    result = {'result': l}
-    return jsonify({'result': l})
+
+@app.route('/answer', methods=['GET', 'POST'])
+def get_answer():
+	print (request.get_json())
+	userid = request.get_json()['userid']
+	taskid = request.get_json()['taskid']
+	ans = request.get_json()['answer']
+	mycursor.execute("SELECT * FROM Tasks WHERE taskid = " + str(taskid))
+	rv = mycursor.fetchall()
+	answer = rv[0][3]
+	if (answer == ans):
+		mycursor.execute("SELECT * FROM Solvedtasks WHERE idUser = '%s' and idTask = '%s'" %(str(userid), str(taskid)) )
+		rv = mycursor.fetchall()
+		print ('->', rv)
+		if (len(rv) == 0):
+			sql = "INSERT INTO Solvedtasks (idUser, idTask) \
+			VALUES ('" + str(userid) + "','" + str(taskid) + "')"
+			mycursor.execute(sql)
+			mydb.commit()
+			result = {
+				'answer': 1
+			}
+		else:
+			result = {
+				'answer': 0
+			}
+	else:
+		result = {
+			'answer': 0
+		}
+
+
+	return jsonify({'result': result})
+
+@app.route('/chanswer', methods=['GET', 'POST'])
+def get_chanswer():
+	print (request.get_json())
+	userid = request.get_json()['userid']
+	taskid = request.get_json()['challengeid']
+	ans = request.get_json()['answer']
+	mycursor.execute("SELECT * FROM Challenges WHERE challengeid = " + str(taskid))
+	rv = mycursor.fetchall()
+	answer = rv[0][5]
+	if (answer == ans):
+		mycursor.execute("SELECT * FROM Solvedchallenges WHERE idUser = '%s' and idChallenge = '%s'" %(str(userid), str(taskid)) )
+		rv = mycursor.fetchall()
+		print ('->', rv)
+		if (len(rv) == 0):
+			sql = "INSERT INTO Solvedchallenges (idUser, idChallenge) \
+			VALUES ('" + str(userid) + "','" + str(taskid) + "')"
+			mycursor.execute(sql)
+			mydb.commit()
+			result = {
+				'answer': 1
+			}
+		else:
+			result = {
+				'answer': 1
+			}
+	else:
+		result = {
+			'answer': 0
+		}
+
+
+	return jsonify({'result': result})
 
 
 @app.route('/users/register', methods=['POST'])
@@ -183,27 +201,26 @@ def register():
     username = request.get_json()['username']
     email = request.get_json()['email']
 
-    mycursor.execute("SELECT * FROM Forum_users where email = '" + str(email) + "'")
+    mycursor.execute("SELECT * FROM Users where email = '" + str(email) + "'")
     rv = mycursor.fetchone()
     if rv != None:
-        return None
+        result = {
+        'username': username,
+        'email': '*'
+        }
+        return jsonify({'result': result})
 
-    # password = bcrypt.generate_password_hash(
-    #     request.get_json()['password']).decode('utf-8')
     password = request.get_json()['password']
-    job = request.get_json()['job']
     
-    sql = "INSERT INTO Forum_users (user_name, pass, email, rol_id, job) \
-    	VALUES ('" + str(username) + "','" + str(password) + "','" + str(email) + "','" + '1' + "','" + '1' + "')"
+    sql = "INSERT INTO Users (username, password, email) \
+    	VALUES ('" + str(username) + "','" + str(password) + "','" + str(email) + "')"
     mycursor.execute(sql)
     mydb.commit()
 
     result = {
-        'user_name': username,
-        'pass': password,
-        'email': email,
-        'job': job
-    }
+        'username': username,
+        'email': email
+        }
 
     return jsonify({'result': result})
 
@@ -215,20 +232,42 @@ def login():
     password = request.get_json()['password']
     result = None
 
-    mycursor.execute("SELECT * FROM Forum_users where email = '" + str(email) + "'")
+    mycursor.execute("""
+            SELECT
+                userid, username, password, email
+            FROM
+                Users
+            WHERE
+                email = %(uemail)s
+        """, {
+            'uemail': email
+        })
+
     rv = mycursor.fetchone()
-    print ('* * * * * * * * * * * * * * *')
-    print(rv)
-    #print (password)
-    #print (rv[2])
-    print ('* * * * * * * * * * * * * * *')
-    if rv == None:
+
+    if rv == None or len(rv[2]) == 0:
         return result
-    if rv[2] == password: #bcrypt.check_password_hash(rv[2], password):
+
+
+    mycursor.execute("SELECT * FROM Solvedtasks WHERE idUser = '%s' " %(str(rv[0])))
+    rv2 = mycursor.fetchall()
+    stasks = [x[2] for x in rv2]
+
+    mycursor.execute("SELECT * FROM Solvedchallenges WHERE idUser = '%s' " %(str(rv[0])))
+    rv2 = mycursor.fetchall()
+    schallenges = [x[2] for x in rv2]
+
+    print ('***', schallenges)
+
+
+    if rv[2] == password:
         access_token = create_access_token(
             identity={
+            	'userid': str(rv[0]),
                 'username': rv[1],
-                'email': rv[3]
+                'email': rv[3],
+                'stasks': stasks,
+                'schallenges': schallenges
             })
         result = access_token
     else:
