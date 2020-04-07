@@ -9,7 +9,15 @@
             <router-link to="/challenges">Challenges</router-link>
         </li>
 
-        <li v-if="auth==''">
+        <li v-if="auth=='loggedin'">
+            <router-link to="/profile">Profile</router-link>
+        </li>
+
+        <li v-if="auth=='loggedin'">
+            <router-link to="/top">Top</router-link>
+        </li>
+
+        <li v-if="auth==''" style="padding-left: 85%;">
             <router-link to="/login">Login</router-link>
         </li>
 
@@ -17,11 +25,7 @@
             <router-link to="/register">Register</router-link>
         </li>
 
-        <li v-if="auth=='loggedin'">
-            <router-link to="/profile">Profile</router-link>
-        </li>
-
-        <li v-if="auth=='loggedin'">
+        <li v-if="auth=='loggedin'" style="padding-left: 75%;">
             <a href="" v-on:click="logout">Logout</a>
         </li>
     </ul>

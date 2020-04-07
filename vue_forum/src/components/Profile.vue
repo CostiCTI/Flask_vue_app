@@ -1,5 +1,6 @@
 <template>
     <div class="profilediv">
+        <br>
         <div id="uname"> 
             {{ username }}
             <hr style="border: 1px solid green; border-radius: 1px;">
@@ -21,7 +22,7 @@
          <br>
          <div style="margin-left: 200px;"> Solved challenges: {{ this.names.length }}</div>
          <br>
-         <div style="margin-left: 220px; margin-right: 220px" v-for="name in names" :key="name">
+         <div style="margin-left: 220px; margin-right: 220px;" v-for="name in names" :key="name">
             <div id="ch"> {{ name }} </div>
          </div>
          <div style="clear:both;"></div>
@@ -79,6 +80,7 @@ export default {
     border-radius: 16px;
     padding-left: 30px;
     padding-right: 30px;
+    margin-top: 10px;
     background-color: #7ccbcc;
 }
 

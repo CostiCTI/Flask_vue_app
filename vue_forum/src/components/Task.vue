@@ -6,7 +6,7 @@
             <br>
             <div v-bind:class="[isActive ? 'act' : 'noact']">
               <p> {{ task.description }} </p>
-              <input type="text" placeholder="answer..." ref="tf"><br>
+              <input type="text" placeholder="answer..." ref="tf" style="width: 80%;"><br>
               <div id='ansdiv'> ... </div>
               <button class="subbut" style="float: right;" v-on:click="submit_answer" > {{ name }} </button>
             </div>

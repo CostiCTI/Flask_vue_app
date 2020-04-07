@@ -1,6 +1,7 @@
 <template>
     <div class="container">
               <div>
+                <br>
                 <input type="text" placeholder="answer..." ref="tf" style="float: left; width: 400px;">
                 <button class="subbut" v-on:click="submit_answer" style="background-color: #8ae887; width: 100px; height: 35px;"> Submit </button>
               </div>

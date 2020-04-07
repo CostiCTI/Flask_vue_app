@@ -17,6 +17,76 @@ CORS(app)
 mydb = mariadb.connect(user='root', database='challenge_db')
 mycursor = mydb.cursor()
 
+
+def calculate_level(xp):
+	if xp < 1:
+		return 0
+	elif xp < 20:
+		return 1
+	elif xp < 50:
+		return 2
+	elif xp < 100:
+		return 3
+	elif xp < 200:
+		return 4
+	elif xp < 325:
+		return 5
+	elif xp < 500:
+		return 6
+	elif xp < 725:
+		return 7
+	elif xp < 1000:
+		return 8
+	return 9  
+
+
+
+@app.route('/top', methods=['GET', 'POST'])
+def get_top():
+	
+	mycursor.execute("SELECT * FROM Solvedchallenges")
+	rv = mycursor.fetchall()
+	d = {}
+	for x in rv:
+		if x[1] in d:
+			d[x[1]] += 1
+		else:
+			d[x[1]] = 1
+	l = []
+	for k, v in d.items():
+		l.append([k, v])
+	l.sort(key=lambda x: x[1], reverse=True)
+
+	ans = []
+	for x in l:
+		userid = x[0]
+		mycursor.execute("SELECT * FROM Users WHERE userid = '%s' " %(str(userid)))
+		rv2 = mycursor.fetchone()
+		ans.append([rv2[1], x[1]])
+
+	result = {'result': ans}
+
+	return result
+
+
+
+@app.route('/taskanswer', methods=['GET', 'POST'])
+def get_task_answer():
+	print (request.get_json())
+	print ('pppppppppppppppppppppppp')
+	tid = request.get_json()['taskid']
+	
+	mycursor.execute("SELECT * FROM Tasks WHERE taskid = '%s' " %(str(tid)))
+	rv2 = mycursor.fetchone()
+	ans = rv2[3]
+	print ('*******************')
+	print (ans)
+
+	result = {'result': ans}
+
+	return result
+
+
 @app.route('/solved_tasks', methods=['GET', 'POST'])
 def get_solved_tasks():
 	userid = request.get_json()['userid']
@@ -25,7 +95,7 @@ def get_solved_tasks():
 	stasks = [x[2] for x in rv]
 	result = {'result': stasks}
 
-	return result;
+	return result
 
 
 @app.route('/solved_challenges', methods=['GET', 'POST'])
@@ -36,7 +106,7 @@ def get_solved_challenges():
 	schallenges = [x[2] for x in rv]
 	result = {'result': schallenges}
 
-	return result;
+	return result
 
 
 @app.route('/stats', methods=['GET', 'POST'])
@@ -227,53 +297,53 @@ def register():
 
 @app.route('/users/login', methods=['POST'])
 def login():
-    print ('ok')
-    email = request.get_json()['email']
-    password = request.get_json()['password']
-    result = None
+	print ('ok')
+	email = request.get_json()['email']
+	password = request.get_json()['password']
+	result = None
 
-    mycursor.execute("""
-            SELECT
-                userid, username, password, email
-            FROM
-                Users
-            WHERE
-                email = %(uemail)s
-        """, {
-            'uemail': email
-        })
+	mycursor.execute("""
+		SELECT
+		userid, username, password, email
+		FROM
+		Users
+		WHERE
+		email = %(uemail)s
+		""", {
+		'uemail': email
+		})
 
-    rv = mycursor.fetchone()
+	rv = mycursor.fetchone()
 
-    if rv == None or len(rv[2]) == 0:
-        return result
-
-
-    mycursor.execute("SELECT * FROM Solvedtasks WHERE idUser = '%s' " %(str(rv[0])))
-    rv2 = mycursor.fetchall()
-    stasks = [x[2] for x in rv2]
-
-    mycursor.execute("SELECT * FROM Solvedchallenges WHERE idUser = '%s' " %(str(rv[0])))
-    rv2 = mycursor.fetchall()
-    schallenges = [x[2] for x in rv2]
-
-    print ('***', schallenges)
+	if rv == None or len(rv[2]) == 0:
+	    return result
 
 
-    if rv[2] == password:
-        access_token = create_access_token(
-            identity={
-            	'userid': str(rv[0]),
-                'username': rv[1],
-                'email': rv[3],
-                'stasks': stasks,
-                'schallenges': schallenges
-            })
-        result = access_token
-    else:
-        result = None
+	mycursor.execute("SELECT * FROM Solvedtasks WHERE idUser = '%s' " %(str(rv[0])))
+	rv2 = mycursor.fetchall()
+	stasks = [x[2] for x in rv2]
 
-    return result
+	mycursor.execute("SELECT * FROM Solvedchallenges WHERE idUser = '%s' " %(str(rv[0])))
+	rv2 = mycursor.fetchall()
+	schallenges = [x[2] for x in rv2]
+
+	print ('***', schallenges)
+
+
+	if rv[2] == password:
+		access_token = create_access_token(
+			identity={
+				'userid': str(rv[0]),
+				'username': rv[1],
+				'email': rv[3],
+				'stasks': stasks,
+				'schallenges': schallenges
+			})
+		result = access_token
+	else:
+		result = None
+
+	return result
 
 
 if __name__ == '__main__':
